@@ -17,7 +17,7 @@ knitr::opts_chunk$set(tidy = FALSE, cache.extra = packageVersion('tint'))
 options(htmltools.dir.version = FALSE)
 ```
 <div style="text-align: justify">
-# Veamos la fuente de la información...
+# Antes de empresar veamos la fuente...
 # Indecopi
 
 El Instituto Nacional de Defensa de la Competencia y de la Protección de la Propiedad Intelectual, es un organismo público autónomo especializado del Estado Peruano, adscrito a la Presidencia del Consejo de Ministros, con personería jurídica de derecho público.
