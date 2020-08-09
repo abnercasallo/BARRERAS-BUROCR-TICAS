@@ -1,0 +1,239 @@
+---
+title: "Análisis exploratrio de las barreras burocráticas en el Perú"
+subtitle: "De acuerdo con la CEB-Indecopi"
+author: "Abner Francisco Casallo Trauco"
+date: "`r Sys.Date()`"
+output: tint::tintHtml
+bibliography: skeleton.bib
+link-citations: yes
+---
+
+
+
+```{r setup, include=FALSE}
+library(tint)
+# invalidate cache when the package version changes
+knitr::opts_chunk$set(tidy = FALSE, cache.extra = packageVersion('tint'))
+options(htmltools.dir.version = FALSE)
+```
+<div style="text-align: justify">
+# Antes de empresar veamos la fuente...
+# Indecopi
+
+El Instituto Nacional de Defensa de la Competencia y de la Protección de la Propiedad Intelectual, es un organismo público autónomo especializado del Estado Peruano, adscrito a la Presidencia del Consejo de Ministros, con personería jurídica de derecho público.
+
+```{r fig-nocap-margin-first, fig.width=40, fig.height=40, cache=TRUE, echo=FALSE}
+
+url <- "https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcRzhHpSqM8Mq-aSm818GCfPsfBchOTbt4pGFA&usqp=CAU"
+
+```
+
+<img src="`r url`" height="200px" width="300px" > 
+
+```{r mis-configuraciones-iniciales, fig.margin=TRUE, fig.width=4, fig.height=4, cache=TRUE, echo=FALSE,message=FALSE,comment=FALSE,warning=FALSE}
+library(tidyverse)
+library(readxl)
+library(dplyr)
+library(tidyr)
+library(readr)
+library(dplyr)
+library(lubridate)
+library(stringr)
+library(ggalluvial)
+library(parcats)
+library(easyalluvial)
+library(forcats)
+library(DataExplorer)
+library(ggplot2)
+
+setwd("~/GitHub/BEST/tareas/Tarea 3/Tarea-semana-3")
+barreras <- readxl::read_xls("Data Logros al 31.12.2017.xls",skip = 1)
+
+barreras <- barreras %>%
+  mutate(TIPO_ENTIDAD = case_when(
+    grepl("MUNICIPALIDA", ENTIDAD) ~ "Gobierno Regional",
+    grepl("UNIVERSIDAD", ENTIDAD) ~ "Universidad",
+    grepl("MINISTERIO", ENTIDAD) ~ "Ejecutivo",
+    grepl("ASAMBLEA", ENTIDAD) ~ "Universidad",
+    grepl("SEGURO SOCIAL DE SALUD", ENTIDAD) ~ "Otras instituciones del Estado",
+    grepl("COLEGIO ODONTOLÓGICO", ENTIDAD) ~ "Colegios profesionales",
+    grepl("REGISTRO NACIONAL", ENTIDAD) ~ "Otras instituciones del Estado",
+    grepl("SUPERINTENDENCIA", ENTIDAD) ~ "Instituciones autónomas",
+    grepl("PRESIDENCIA DEL CONSEJO", ENTIDAD) ~ "Ejecutivo",
+    grepl("AUTORIDAD PORTUARIA", ENTIDAD) ~ "Otras instituciones del Estado",
+    grepl("DEFENSORIA DEL", ENTIDAD) ~ "Instituciones autónomas",
+    grepl("SERVICIO NACIONAL", ENTIDAD) ~ "Otras instituciones del Estado",
+                          
+                          )
+  )
+
+barreras <- barreras %>%
+  mutate(`TIPO DE ACTUACIÓN` = case_when(
+    grepl("iNVESTIGACIÓN DE OFICIO", `TIPO DE ACTUACIÓN`) ~ "INVESTIGACIÓN DE OFICIO",
+    TRUE~`TIPO DE ACTUACIÓN`
+  )
+  )
+
+
+barreras <- barreras %>%
+  mutate(TIPO_BARRERA = case_when(
+    grepl("ORDEN", `NORMA QUE ESTABLECÍA LA BARRERA`) & TIPO_ENTIDAD == "Gobierno Regional" ~ "Ordenanzas de gobiernos regionales"   
+  )
+  )
+
+barreras <- barreras %>%
+  mutate(TIPO_BARRERA = case_when(
+    grepl("ORDEN", `NORMA QUE ESTABLECÍA LA BARRERA`) & TIPO_ENTIDAD %in% c("Gobierno Regional") ~ "Ordenanza de gobiernos regionales"  ,
+    grepl("RESOLUC", `NORMA QUE ESTABLECÍA LA BARRERA`) & TIPO_ENTIDAD %in% c("Universidad") ~ "Resolución universitaria",   
+    grepl("DECRE", `NORMA QUE ESTABLECÍA LA BARRERA`) & TIPO_ENTIDAD %in% c("Gobierno Regional") ~ "Decreto de gobiernos regionales"  ,
+    grepl("Ordenanza", `NORMA QUE ESTABLECÍA LA BARRERA`) & TIPO_ENTIDAD %in% c("Gobierno Regional") ~ "Ordenanza de gobiernos regionales"  ,
+    grepl("ODENANZA", `NORMA QUE ESTABLECÍA LA BARRERA`) & TIPO_ENTIDAD %in% c("Gobierno Regional") ~ "Ordenanza de gobiernos regionales"  ,
+    grepl("DECRETO SUPREMO", `NORMA QUE ESTABLECÍA LA BARRERA`) & TIPO_ENTIDAD %in% c("Ejecutivo") ~ "DECRETO SUPREMO"  ,
+    grepl("PORTAL", `NORMA QUE ESTABLECÍA LA BARRERA`) ~ "Web"  ,
+    grepl("RESOLUCIÓN MINISTERIAL", `NORMA QUE ESTABLECÍA LA BARRERA`) ~ "RESOLUCIÓN MINISTERIAL"  ,
+    grepl("WEB INSTITUCIONA", `NORMA QUE ESTABLECÍA LA BARRERA`) ~ "Web"  ,
+    grepl("RESOLUCIÓN DEFENSORIAL", `NORMA QUE ESTABLECÍA LA BARRERA`) ~ "RESOLUCIÓN DEFENSORIAL"  ,
+    grepl("DECRETO SUPREMO", `NORMA QUE ESTABLECÍA LA BARRERA`) ~ "DECRETO SUPREMO"  ,
+    grepl("RESOLUCIÓN JEFATURAL", `NORMA QUE ESTABLECÍA LA BARRERA`) ~ "RESOLUCIÓN JEFATURAL"  ,
+    grepl("DIRECTIVA", `NORMA QUE ESTABLECÍA LA BARRERA`) ~ "Directiva"  ,
+    grepl("REGLAMENTO", `NORMA QUE ESTABLECÍA LA BARRERA`) ~ "Reglamento"  ,
+    
+    
+  )
+  )
+
+ 
+barreras2 <- barreras %>% filter(TIPO_BARRERA %in% c(NA))
+
+#### Adecuación
+
+
+barreras <- barreras %>%
+  mutate(TIPO_ADECUACION = case_when(
+    grepl("ORDEN", `ADECUACIÓN (NORMA QUE ELIMINA BARRERA)`) & TIPO_ENTIDAD %in% c("Gobierno Regional") ~ "Ordenanza de gobiernos regionales"  ,
+    grepl("RESOLUC", `ADECUACIÓN (NORMA QUE ELIMINA BARRERA)`) & TIPO_ENTIDAD %in% c("Universidad") ~ "Resolución universitaria",   
+    grepl("DECRE", `ADECUACIÓN (NORMA QUE ELIMINA BARRERA)`) & TIPO_ENTIDAD %in% c("Gobierno Regional") ~ "Decreto de gobiernos regionales"  ,
+    grepl("Ordenanza", `ADECUACIÓN (NORMA QUE ELIMINA BARRERA)`) & TIPO_ENTIDAD %in% c("Gobierno Regional") ~ "Ordenanza de gobiernos regionales"  ,
+    grepl("ODENANZA", `ADECUACIÓN (NORMA QUE ELIMINA BARRERA)`) & TIPO_ENTIDAD %in% c("Gobierno Regional") ~ "Ordenanza de gobiernos regionales"  ,
+    grepl("DECRETO SUPREMO", `ADECUACIÓN (NORMA QUE ELIMINA BARRERA)`) & TIPO_ENTIDAD %in% c("Ejecutivo") ~ "DECRETO SUPREMO"  ,
+    grepl("PORTAL", `ADECUACIÓN (NORMA QUE ELIMINA BARRERA)`) ~ "Web"  ,
+    grepl("RESOLUCIÓN MINISTERIAL", `ADECUACIÓN (NORMA QUE ELIMINA BARRERA)`) ~ "RESOLUCIÓN MINISTERIAL"  ,
+    grepl("WEB INSTITUCIONA", `ADECUACIÓN (NORMA QUE ELIMINA BARRERA)`) ~ "Web"  ,
+    grepl("RESOLUCIÓN DEFENSORIAL", `ADECUACIÓN (NORMA QUE ELIMINA BARRERA)`) ~ "RESOLUCIÓN DEFENSORIAL"  ,
+    grepl("DECRETO SUPREMO", `ADECUACIÓN (NORMA QUE ELIMINA BARRERA)`) ~ "DECRETO SUPREMO"  ,
+    grepl("RESOLUCIÓN JEFATURAL", `ADECUACIÓN (NORMA QUE ELIMINA BARRERA)`) ~ "RESOLUCIÓN JEFATURAL"  ,
+    grepl("DIRECTIVA", `ADECUACIÓN (NORMA QUE ELIMINA BARRERA)`) ~ "Directiva"  ,
+    grepl("REGLAMENTO", `ADECUACIÓN (NORMA QUE ELIMINA BARRERA)`) ~ "Reglamento"  ,
+    grepl("CONCLUSIÓN DEL PROCEDIMIENTO", `ADECUACIÓN (NORMA QUE ELIMINA BARRERA)`) ~ "CONCLUSIÓN DEL PROCEDIMIENTO"  ,
+    grepl("Decreto de Alcaldía", `ADECUACIÓN (NORMA QUE ELIMINA BARRERA)`) & TIPO_ENTIDAD %in% c("Gobierno Regional") ~ "Decreto de gobiernos regionales"  ,
+    grepl("RESOLUCIÓN DE GERENCIA GENERAL", `ADECUACIÓN (NORMA QUE ELIMINA BARRERA)`) ~ "Reglamento"  ,
+    
+    
+  )
+  )
+
+barreras2 <- barreras %>% filter(TIPO_ADECUACION %in% c(NA))
+
+barreras <- barreras %>%
+  mutate(REVERSION = case_when(TIPO_ADECUACION==TIPO_BARRERA ~ "SI",
+                               TRUE ~ "NO"))
+
+barreras3 <-  barreras %>% select(REVERSION,`TIPO DE ACTUACIÓN`,TIPO_ENTIDAD,TIPO_BARRERA,TIPO_ADECUACION)
+barreras3 <-  barreras %>% select(`TIPO DE ACTUACIÓN`,TIPO_ENTIDAD,TIPO_BARRERA,TIPO_ADECUACION,REVERSION)
+
+
+barreras3 <- lapply(barreras3,function(x) as_factor(x))
+barreras3 <- as.data.frame(barreras3)
+p <-  alluvial_wide(barreras3, max_variables = 5)
+
+
+
+```
+
+
+
+# ANÁLISIS DEL TRATAMIENTO DE LAS BARRERRAS BUROCRÁTICAS POR LA CEB
+
+
+### Consideraciones preliminares
+
+En  este apartado analizaremos diversos aspectos en el tratamiento de las barreras burocráticas por parte de la CEB . Se abordarán aspectos como ***cuál es el tipo de entidad que emite más barreras***, ***¿hay reversión de las barreras?***, entre otros aspectos.
+
+
+```{r fig-margin, fig.margin = TRUE, fig.cap = "FUENTES DE LAS BARRERAS DISCUTIDAS DE OFICIO", fig.width=5, fig.height=4, cache=TRUE, echo=FALSE,message=FALSE,comment=FALSE,warning=FALSE}
+library(ggplot2)
+ggplot(barreras3, mapping=aes(x = "TIPO.DE.ACTUACIÓN",fill=factor(TIPO_BARRERA))) + stat_count (width = 0.7) +
+
+labs(title = "ACTUACIONES DE OFICIO ", 
+           caption = "Fuente: INDECOPI",
+           x="ACTUACIÓNES DE OFICIO", y="CANTIDAD DE PROCEDIMIENTOS",fill="TIPO DE NORMA") 
+
+
+        
+
+
+
+
+```
+
+
+
+### ¿QUÉ ENTIDAD EMITE MÁS BARRERAS Y LAS REVIERTE?
+
+Una pregunta preliminar que surge es ¿qué 
+entidad está dificultando más la actividad económica? En el gráfico"Barreras por entidad y 
+análisis de reversión" uno puedo observar la respuesta a ello. La respuesta para ambascuestiones es
+la de los gobiernos regionales. De hecho, el resultado no genera ninguna sorpresa. De acuerdo con las investigaciones sobre la materia, la demora en la tramitación así como la excesiva regulación
+están dentro de los principales obstáculos para el desarrollo de negocios en el Perú,
+lo cual a su vez se vincula con escenarios de corrupción (DALY, Jorge y NAVAS, Óscar: 2015).
+
+Asimismo, de acuerdo con el ranking de barreras burocráticas eliminadas voluntariamente en el 2019, las 27 primeras son Municipalidades. La conclusión que podemos obtener de todo esto es que las reformas destinadas a reducir los obstáculos al desarrollo empresarial deben estar cocentradas en buena parte a nivel municipal/regional. 
+
+
+```{r grafico2, fig.margin = F, fig.width=45, fig.height=25, cache=T,echo=FALSE}
+
+#parcats(p, marginal_histograms = TRUE, width=1250, height=1500, data_input = barreras3, labelfont=list(size = 15, color = 'black'))
+library(ggplot2)
+
+ggplot(barreras3, mapping=aes(x = TIPO_ENTIDAD, fill=factor(REVERSION))) + stat_count (width = 0.7) +
+  
+  theme( axis.text = element_text( size = 17 ),
+             axis.text.x = element_text( size = 33 ),
+             axis.title = element_text( size = 40, face = "bold" ),
+             title=element_text( size =40, face = "bold" ),
+             legend.text=element_text(size=40)) + labs(title = "                                   BARRERAS POR ENTIDAD Y ANÁLISIS DE REVERSIÓN ",                                    subtitle = "                                                                        Histórico 2013-2017",
+           caption = "Fuente: INDECOPI",
+           x="ENTIDAD", y="CONTEO DE BARRERAS",fill="REVERSION") 
+
+
+
+```
+
+
+### ¿QUÉ TIPO DE BARRERA NOS DEBERÍA PREOCUPAR MÁS?
+Una vez que hemos observado que los gobiernos regionales son los principales productores de barreras, la pregunta siguiente es ¿qué tipo de barrera es la que uno encuentra más en la práctica? Este asunto es importante, pues en la práctica las barreras tienen disntintas formas de materializarse. Como se observa en el gráfico, las ordenanzas de los gobiernos regionales son las principales barreras a considerar.
+
+```{r grafico3, fig.margin = F, fig.width=45, fig.height=25, cache=T,echo=FALSE}
+
+#parcats(p, marginal_histograms = TRUE, width=1250, height=1500, data_input = barreras3, labelfont=list(size = 15, color = 'black'))
+library(ggplot2)
+
+ggplot(barreras3, mapping=aes(x = TIPO_ENTIDAD, fill=factor(TIPO_BARRERA))) + stat_count (width = 0.7)+
+  
+  theme( axis.text = element_text( size = 40 ),
+             axis.text.x = element_text( size = 30 ),
+             axis.title = element_text( size = 40, face = "bold"),
+             title=element_text( size =40, face = "bold" ),
+             strip.text = element_text(size = 15),legend.text=element_text(size=40)) + labs(title = "                                   BARRERAS POR ENTIDAD Y TIPO ",   fill="TIPO DE BARRERA",                                 subtitle = "                                                                        Histórico 2013-2017",
+           caption = "Fuente: INDECOPI",
+           x="ENTIDAD", y="CONTEO DE BARRERAS") 
+
+
+
+#library(ggplot2)
+#ggplot(barreras3, aes(x = TIPO_ENTIDAD)) + geom_bar()
+
+```
+
+
+
